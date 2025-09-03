@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Festival Poster Maker</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        padding: 20px;
+        background: #f7f7f7;
+    }
+
+    #canvas-container {
+        width: 100%;
+        max-width: 500px;
+        margin: auto;
+    }
+
+    canvas {
+        width: 100%;
+        border: 1px solid #ccc;
+        background: #fff;
+        display: block;
+    }
+
+    input[type="file"], button {
+        margin: 10px 0;
+        padding: 10px 15px;
+        font-size: 16px;
+    }
+
+    button {
+        background: #007bff;
+        color: white;
+        border: none;
+        cursor: pointer;
+        border-radius: 5px;
+    }
+
+    button:hover {
+        background: #0056b3;
+    }
+</style>
+</head>
+<body>
+
+<h2>Festival Poster Maker</h2>
+
+<input type="file" id="upload" accept="image/*">
+<div id="canvas-container">
+    <canvas id="posterCanvas"></canvas>
+</div>
+<button id="downloadBtn">Download Poster</button>
+
+<script>
+    const canvas = document.getElementById("posterCanvas");
+    const ctx = canvas.getContext("2d");
+
+    let template;
+
+    // Load poster template
+    template = new Image();
+    template.src = "Poster.jpg"; // <-- replace with your poster file
+    template.onload = () => {
+        canvas.width = template.width;
+        canvas.height = template.height;
+        drawTemplate();
+    };
+
+    function drawTemplate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(template, 0, 0, canvas.width, canvas.height);
+    }
+
+    document.getElementById("upload").addEventListener("change", function (e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function (event) {
+            const userImg = new Image();
+            userImg.src = event.target.result;
+            userImg.onload = function () {
+                drawTemplate();
+
+                // White box coordinates (same as poster design)
+                // White box coordinates
+                const boxX = 418;
+                const boxY = 419;
+                const boxW = 623;
+                const boxH = 597;
+
+
+                // Crop logic
+                const imgRatio = userImg.width / userImg.height;
+                const boxRatio = boxW / boxH;
+
+                let sx, sy, sWidth, sHeight;
+
+                if (imgRatio > boxRatio) {
+                    sHeight = userImg.height;
+                    sWidth = sHeight * boxRatio;
+                    sx = (userImg.width - sWidth) / 2;
+                    sy = 0;
+                } else {
+                    sWidth = userImg.width;
+                    sHeight = sWidth / boxRatio;
+                    sx = 0;
+                    sy = (userImg.height - sHeight) / 2;
+                }
+
+                // Draw user image exactly inside box
+                ctx.drawImage(userImg, sx, sy, sWidth, sHeight, boxX, boxY, boxW, boxH);
+
+                // White box background remove effect:
+                // --> Poster.jpg already has white box drawn in design
+                // --> So user image overwrite kare to box gayab lage
+            };
+        };
+        reader.readAsDataURL(file);
+    });
+
+    document.getElementById("downloadBtn").addEventListener("click", function () {
+    const link = document.createElement('a');
+    link.download = 'festival-poster.png';
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+});
+
+</script>
+
+</body>
+</html>
