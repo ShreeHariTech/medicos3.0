@@ -3,66 +3,167 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Medicos 3.0</title>
+<title>Medicos 3.0 Poster Maker</title>
+
+<!-- Cropper.js -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+
 <style>
     body {
-        font-family: Arial, sans-serif;
-        text-align: center;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: #f0f2f5;
+        margin: 0;
         padding: 20px;
-        background: #f7f7f7;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        min-height: 100vh;
     }
 
-    #canvas-container {
-        width: 100%;
-        max-width: 500px;
-        margin: auto;
-    }
-
-    canvas {
-        width: 100%;
-        border: 1px solid #ccc;
+    .container {
         background: #fff;
-        display: block;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0px 4px 15px rgba(0,0,0,0.1);
+        max-width: 850px;
+        width: 100%;
     }
 
-    input[type="file"], button {
-        margin: 10px 0;
-        padding: 10px 15px;
-        font-size: 16px;
+    h2 {
+        text-align: center;
+        color: #007bff;
+        margin-bottom: 20px;
+        font-size: 1.8rem;
+    }
+
+    .upload-box {
+        border: 2px dashed #007bff;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        background: #f9fbff;
+        margin-bottom: 20px;
+        transition: background 0.3s;
+    }
+
+    .upload-box:hover {
+        background: #eef5ff;
+    }
+
+    input[type="file"] {
+        display: none;
+    }
+
+    label {
+        display: inline-block;
+        padding: 12px 25px;
+        background: #007bff;
+        color: #fff;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+
+    label:hover {
+        background: #0056b3;
+    }
+
+    #preview {
+        max-width: 100%;
+        display: none;
+        margin-top: 15px;
+        border-radius: 8px;
+    }
+
+    .btn-group {
+        text-align: center;
+        margin-top: 20px;
     }
 
     button {
-        background: #007bff;
-        color: white;
+        padding: 12px 22px;
+        margin: 5px;
+        font-size: 1rem;
+        border-radius: 8px;
         border: none;
         cursor: pointer;
-        border-radius: 5px;
+        transition: all 0.3s ease;
     }
 
-    button:hover {
+    button.primary {
+        background: #007bff;
+        color: #fff;
+    }
+
+    button.primary:hover {
         background: #0056b3;
+    }
+
+    button.success {
+        background: #28a745;
+        color: #fff;
+    }
+
+    button.success:hover {
+        background: #1e7e34;
+    }
+
+    #canvas-container {
+        margin-top: 25px;
+        text-align: center;
+    }
+
+    canvas {
+        max-width: 100%;
+        border-radius: 12px;
+        border: 1px solid #ddd;
+    }
+
+    @media (max-width: 600px) {
+        h2 {
+            font-size: 1.5rem;
+        }
+        button {
+            width: 100%;
+        }
     }
 </style>
 </head>
 <body>
 
-<h2>Festival Poster Maker</h2>
+<div class="container">
+    <h2>Medicos 3.0 Poster Maker</h2>
 
-<input type="file" id="upload" accept="image/*">
-<div id="canvas-container">
-    <canvas id="posterCanvas"></canvas>
+    <div class="upload-box">
+        <label for="upload">Choose Image</label>
+        <input type="file" id="upload" accept="image/*">
+        <img id="preview"/>
+    </div>
+
+    <div class="btn-group">
+        <button id="placeBtn" class="primary" style="display:none;">Place in Poster</button>
+        <button id="downloadBtn" class="success" style="display:none;">Download Poster</button>
+    </div>
+
+    <div id="canvas-container">
+        <canvas id="posterCanvas"></canvas>
+    </div>
 </div>
-<button id="downloadBtn">Download Poster</button>
 
 <script>
     const canvas = document.getElementById("posterCanvas");
     const ctx = canvas.getContext("2d");
 
     let template;
+    let cropper;
+
+    // White box coordinates
+    const boxX = 418, boxY = 419, boxW = 623, boxH = 597;
 
     // Load poster template
     template = new Image();
-    template.src = "Poster.jpg"; // <-- replace with your poster file
+    template.src = "Poster.jpg"; // 🔴 Replace with your template image
     template.onload = () => {
         canvas.width = template.width;
         canvas.height = template.height;
@@ -74,61 +175,55 @@
         ctx.drawImage(template, 0, 0, canvas.width, canvas.height);
     }
 
+    // Handle upload
     document.getElementById("upload").addEventListener("change", function (e) {
         const file = e.target.files[0];
         if (!file) return;
 
         const reader = new FileReader();
         reader.onload = function (event) {
-            const userImg = new Image();
-            userImg.src = event.target.result;
-            userImg.onload = function () {
-                drawTemplate();
+            const img = document.getElementById("preview");
+            img.src = event.target.result;
+            img.style.display = "block";
 
-                // White box coordinates (same as poster design)
-                // White box coordinates
-                const boxX = 418;
-                const boxY = 419;
-                const boxW = 623;
-                const boxH = 597;
+            if (cropper) cropper.destroy();
+            cropper = new Cropper(img, {
+                aspectRatio: boxW / boxH,
+                viewMode: 1,
+                autoCropArea: 1,
+                responsive: true,
+                background: false,
+                zoomable: false,
+                rotatable: false
+            });
 
-
-                // Crop logic
-                const imgRatio = userImg.width / userImg.height;
-                const boxRatio = boxW / boxH;
-
-                let sx, sy, sWidth, sHeight;
-
-                if (imgRatio > boxRatio) {
-                    sHeight = userImg.height;
-                    sWidth = sHeight * boxRatio;
-                    sx = (userImg.width - sWidth) / 2;
-                    sy = 0;
-                } else {
-                    sWidth = userImg.width;
-                    sHeight = sWidth / boxRatio;
-                    sx = 0;
-                    sy = (userImg.height - sHeight) / 2;
-                }
-
-                // Draw user image exactly inside box
-                ctx.drawImage(userImg, sx, sy, sWidth, sHeight, boxX, boxY, boxW, boxH);
-
-                // White box background remove effect:
-                // --> Poster.jpg already has white box drawn in design
-                // --> So user image overwrite kare to box gayab lage
-            };
+            document.getElementById("placeBtn").style.display = "inline-block";
         };
         reader.readAsDataURL(file);
     });
 
-    document.getElementById("downloadBtn").addEventListener("click", function () {
-    const link = document.createElement('a');
-    link.download = 'festival-poster.png';
-    link.href = canvas.toDataURL("image/png");
-    link.click();
-});
+    // Place cropped image
+    document.getElementById("placeBtn").addEventListener("click", function () {
+        if (!cropper) return;
 
+        const croppedCanvas = cropper.getCroppedCanvas({
+            width: boxW,
+            height: boxH
+        });
+
+        drawTemplate();
+        ctx.drawImage(croppedCanvas, boxX, boxY, boxW, boxH);
+
+        document.getElementById("downloadBtn").style.display = "inline-block";
+    });
+
+    // Download poster
+    document.getElementById("downloadBtn").addEventListener("click", function () {
+        const link = document.createElement('a');
+        link.download = 'festival-poster.png';
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+    });
 </script>
 
 </body>
