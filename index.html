@@ -45,9 +45,7 @@
         margin-bottom: 15px;
     }
 
-    input[type="file"] {
-        display: none;
-    }
+    input[type="file"] { display: none; }
 
     label {
         display: inline-block;
@@ -67,10 +65,7 @@
         border: 1px solid #ccc;
     }
 
-    .btn-group {
-        text-align: center;
-        margin-top: 10px;
-    }
+    .btn-group { text-align: center; margin-top: 10px; }
 
     button {
         padding: 8px 16px;
@@ -86,15 +81,9 @@
     button.success { background: #28a745; color: #fff; }
     button.success:hover { background: #1e7e34; }
 
-    #canvas-container {
-        margin-top: 15px;
-        text-align: center;
-    }
+    #canvas-container { margin-top: 15px; text-align: center; }
 
-    canvas {
-        max-width: 100%;
-        border: 1px solid #ccc;
-    }
+    canvas { max-width: 100%; border: 1px solid #ccc; }
 
     @media (max-width: 600px) {
         h2 { font-size: 1.2rem; }
@@ -125,6 +114,17 @@
 </div>
 
 <script>
+    // Disable Right Click + Inspect Shortcuts
+    document.addEventListener("contextmenu", e => e.preventDefault());
+    document.addEventListener("keydown", e => {
+        if (e.ctrlKey && (e.key === "u" || e.key === "U" || e.key === "s" || e.key === "S")) {
+            e.preventDefault();
+        }
+        if (e.key === "F12" || (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J" || e.key === "C"))) {
+            e.preventDefault();
+        }
+    });
+
     const canvas = document.getElementById("posterCanvas");
     const ctx = canvas.getContext("2d");
 
@@ -136,7 +136,7 @@
 
     // Load poster template
     template = new Image();
-    template.src = "Poster.jpg"; // 🔴 Replace with your template
+    template.src = "Poster.jpg"; 
     template.onload = () => {
         canvas.width = template.width;
         canvas.height = template.height;
